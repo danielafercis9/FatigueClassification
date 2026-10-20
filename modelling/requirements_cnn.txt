@@ -1,0 +1,4 @@
+# Optional tested CNN environment; do not reinstall the working stack automatically.
+# Prefer the compatible preinstalled PyTorch in Colab; record its version per run.
+-r requirements.txt
+torch==2.11.0

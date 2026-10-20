@@ -1,0 +1,22 @@
+{
+  "window_s": 0.5,
+  "hop_s": 0.25,
+  "bandpass_hz": [20.0, 450.0],
+  "butter_order": 4,
+  "notch_hz": null,
+  "notch_q": 30.0,
+  "timing_tolerance_s": 0.00005,
+  "edge_guard_s": 0.1,
+  "count_threshold_mv": 2.0,
+  "welch_nperseg": 256,
+  "sample_entropy": true,
+  "entropy_r_sd": 0.2,
+  "x_axis": "seconds",
+  "flatline_min_s": 0.02,
+  "review_low_frequency_fraction": 0.2,
+  "review_crest_factor": 8.0,
+  "trajectory_bins": 20,
+  "figure_features": ["RMS", "MDF", "MNF"],
+  "mvc_normalization": "not_applied_reference_unavailable",
+  "candidate_boundary_method": "100ms_centered_RMS_above_15percent_of_p90_for_at_least_200ms"
+}

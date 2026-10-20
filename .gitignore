@@ -1,0 +1,30 @@
+# Private recordings, reviews, derived data, models and figures
+config.local.json
+.env*
+Dataset/
+**/private/
+**/data/
+**/cnn_data/
+**/outputs/
+**/review_data/
+processing/annotations.json
+*.csv
+!/results.csv
+*.npz
+*.npy
+*.joblib
+*.pt
+*.pth
+*.zip
+*.png
+*.pdf
+
+# Local Python and notebook state
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*_Results.ipynb
+*_executed.ipynb
+.DS_Store
+Thumbs.db
