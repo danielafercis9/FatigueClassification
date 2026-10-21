@@ -1,6 +1,6 @@
 # Rectus femoris sEMG classification
 
-This initial code upload contains implementations of six experiments for classifying early and late exercise stages from rectus femoris surface EMG: a majority-class baseline, logistic regression on RMS and MDF, logistic regression with feature selection, a linear SVM, an RBF SVM, and a fixed 1D waveform CNN. It includes preprocessing, feature extraction, subject-wise evaluation, and scripts for generating result tables and figures.
+This repository contains nine completed experiments for classifying early and late exercise stages from rectus femoris surface EMG: two baselines, selected-feature logistic regression and linear SVM, an expanded nested-search RBF SVM, a fixed waveform CNN, a fixed significant-feature RBF SVM, an ANN using the same significance selection, and a two-band RBF SVM. Code includes curation, feature extraction, participant-level statistics, subject-wise evaluation, and report table/figure generation.
 
 The labels are proxies for fatigue. Class **0** represents the first third of a reviewed active interval, and class **1** represents its last third, measured in elapsed time. The middle third and windows crossing a third boundary are discarded. These labels do not constitute independently measured physiological fatigue.
 
@@ -32,7 +32,7 @@ python -m pip install -r requirements.txt
 python -m pip install -r modelling/requirements_cnn.txt
 ```
 
-The numerical libraries and PyTorch are pinned to the versions used in the original experiment. The CNN uses CUDA when available and otherwise runs on CPU. The nested RBF search can take considerably longer than the other feature models. Each training run records library versions, device, seeds, input hashes, and execution time; results can vary across hardware and library versions.
+The numerical libraries and PyTorch are pinned to tested project versions. Retain each original run manifest for the actual installed build/device (the saved CNN runtime used a CUDA PyTorch build). The CNN uses CUDA when available; sklearn SVM and ANN run on CPU. Run real participant-data training only in teacher-approved private Colab. The commands below document reproduction; no new training is needed to rebuild the committed results summary. Keep all participant inputs and training artifacts private. Results can vary across hardware and library versions.
 
 Every experiment can run from the command line. To use the notebooks instead, install and launch JupyterLab:
 
@@ -111,7 +111,7 @@ python -m modelling.export_cnn_signals
 
 If you completed a new review using the preceding instructions, start with `python processing/pipeline.py run`.
 
-The processing chain uses timestamp-aware segmentation, a fourth-order Butterworth bandpass design at **20–450 Hz** with forward/backward SOS filtering, **500 ms windows with a 250 ms hop**. No notch filter or MVC normalization is applied; an independent MVC reference is unavailable. The filtering is offline and noncausal.
+The processing chain uses timestamp-aware segmentation, a fourth-order Butterworth bandpass design at **20–450 Hz** with forward/backward SOS filtering, **500 ms windows with a 250 ms hop**, and a **100 ms segment-edge guard**. No notch filter or MVC normalization is applied; an independent MVC reference is unavailable. The filtering is offline and noncausal.
 
 Windows are ineligible when they violate timing or segment-edge rules, contain nonfinite values, overlap an ADC flatline lasting at least 20 ms, or overlap a reviewed artifact interval. Whole-set exclusions follow the saved annotations. Parameters are stored in `processing/config.json`.
 
@@ -123,20 +123,28 @@ The CNN exporter reconstructs the corresponding **500-sample filtered waveform w
 
 Run each notebook from top to bottom, or execute its command-line equivalent:
 
-| Notebook | Command |
-| --- | --- |
-| [01 Majority baseline](modelling/01_Majority_Baseline.ipynb) | `python -m modelling.core majority` |
-| [02 Logistic regression on RMS and MDF](modelling/02_Logistic_RMS_MDF.ipynb) | `python -m modelling.core lr_rms_mdf` |
-| [03 Logistic regression with selected features](modelling/03_Logistic_Selected.ipynb) | `python -m modelling.core lr_selected` |
-| [04 Linear SVM with selected features](modelling/04_Linear_SVM_Selected.ipynb) | `python -m modelling.core svm_selected` |
-| [05 RBF SVM with selected features](modelling/05_RBF_SVM_Selected.ipynb) | `python -m modelling.core svm_rbf_selected` |
-| [06 Fixed waveform CNN](modelling/06_CNN_Fixed.ipynb) | `python -m modelling.cnn` |
+| Notebook | Noninteractive command | Study status |
+| --- | --- | --- |
+| [01 Majority baseline](modelling/01_Majority_Baseline.ipynb) | `python -m modelling.core majority` | Complete |
+| [02 Logistic regression on RMS and MDF](modelling/02_Logistic_RMS_MDF.ipynb) | `python -m modelling.core lr_rms_mdf` | Complete |
+| [03 Logistic regression with selected features](modelling/03_Logistic_Selected.ipynb) | `python -m modelling.core lr_selected` | Complete |
+| [04 Linear SVM with selected features](modelling/04_Linear_SVM_Selected.ipynb) | `python -m modelling.core svm_selected` | Complete |
+| [05 Expanded nested RBF SVM](modelling/05_RBF_SVM_Selected.ipynb) | `python -m modelling.core svm_rbf_selected` | Complete; expensive nested search |
+| [06 Fixed waveform CNN](modelling/06_CNN_Fixed.ipynb) | `python -m modelling.cnn` | Complete |
+| [07 Fixed significant-feature RBF SVM](modelling/07_RBF_SVM_Fixed_Significant.ipynb) | `python -m modelling.fixed_rbf` | Complete |
+| [08 Fixed significant-feature ANN](modelling/08_ANN_Fixed_Significant.ipynb) | `python -m modelling.ann` | Complete |
+| [09 LFC/HFC two-band fixed RBF SVM](modelling/09_LFC_HFC_Fixed_RBF.ipynb) | `python -m modelling.band` | Complete |
+
+Notebook setup locates the repository from the current directory or `EMG_PROJECT_ROOT`. In Colab, mount your own private Drive separately and set `EMG_PROJECT_ROOT` to the checkout path. Installation is optional and defaults to off; restart the same kernel after changing packages. Public notebooks have no stored execution outputs.
+
 
 The experiments are independent after preprocessing. To reproduce only the CNN, complete the setup and input preparation above, then run `python -m modelling.cnn`; training the other classifiers is unnecessary.
 
 ### Validation and fixed settings
 
-Outer evaluation uses leave-one-subject-out cross-validation. Both legs and all recordings from a participant remain in the same partition. Feature selection, imputation, scaling, and hyperparameter searches are fitted within grouped inner validation on training participants. The majority baseline has no tuning.
+Outer evaluation uses 15-fold leave-one-subject-out cross-validation. Both legs and all recordings from a participant remain in the same partition. Learned transforms use training data only. Models 02–05 use grouped inner validation where tuning applies; selection is refitted inside the relevant training split. Models 06–09 have fixed settings and no inner search. The majority baseline has no tuning.
+
+Models 07 and 08 recompute participant-level sign tests within each outer training fold, apply BY q<0.05 across 36 candidates, and remove redundancy at absolute Spearman rho >=0.90, with no feature-count cap. Model 07 uses RBF SVC C=1, gamma='scale'. Model 08 uses a fixed 32/16-unit ReLU ANN for 100 epochs. Model 09 uses only Welch-integrated absolute powers at 20–46.7 Hz and 150–350 Hz with fixed RBF settings, without feature selection. Full-cohort exploratory significance is not a predefined independent predictor list.
 
 The CNN uses a fixed architecture, training-only amplitude scaling, and no inner search or early stopping. Its settings are **20 epochs, batch size 128, learning rate 0.001, weight decay 0.0001, and dropout 0.2**, defined in `CNN_CONFIG`. The base random seed is **20261018**; fold-specific seeds and final refit settings are recorded by the runners. No class weighting or resampling is applied.
 
@@ -150,15 +158,21 @@ The notebooks display these class counts automatically. Command-line runs genera
 
 ## Results and figures
 
-Each experiment writes a timestamped run directory under `modelling/outputs/<model>/`. The corresponding `modelling/outputs/latest_<model>.json` identifies its latest completed run.
+### Committed completed-study results
 
-After all six experiments finish using the same inputs and source version, combine their results:
+`results.csv` contains 135 rows: 15 held-out folds for each of nine completed models (01–09), with ten scalar evaluation metrics. `results_summary.csv` contains their participant-weighted means and sample standard deviations. Rebuild this comparison without training:
 
 ```sh
-python -m modelling.export_results
+python -m modelling.export_downloaded_results
 ```
 
-This writes `results.csv` at the repository root, with one row per model and held-out fold and all ten evaluation metrics. It also writes `modelling/outputs/report_metrics_mean_sd.csv`, containing the six-model comparison. The exporter checks completion, dataset compatibility, held-out participants, and shared evaluation code. The separate automatically generated `modelling/outputs/results.csv` covers only models 01–04.
+The initial import from the separately downloaded private fold tables was `python -m modelling.export_downloaded_results --input-dir ../results`. That import validates matching subject assignments and class supports, and strips participant IDs and training metadata from the public table. Source file hashes and verification limits are recorded in `results_provenance.json`. Original run manifests are still needed to verify input and training-source hashes; these CSVs alone cannot do so.
+
+Source code for all nine models and the statistical analysis is included. The downloaded model 05 archive confirms a completed 15-fold run with a final refit, and its fold table is included. It achieved macro-F1 0.697 ± 0.113, accuracy 0.718 ± 0.084, and ROC-AUC 0.821 ± 0.086 (participant means ± sample SD). The fixed RBF achieved macro-F1 0.700 ± 0.093; this small descriptive difference does not establish a significant performance difference. Confusion matrices, window predictions and trained models cannot be recovered from scalar fold metrics alone; preserve original private run artifacts, including the model 05 archive. Its manifest and CSV correspondence are checked during import when the ZIP is available; archive hashes are recorded in results_provenance.json.
+
+Each experiment writes a timestamped run directory under `modelling/outputs/<model>/`. The corresponding `modelling/outputs/latest_<model>.json` identifies its latest completed run.
+
+`modelling/export_results.py` is a historical six-model exporter; do not use it for the current nine-model comparison. It would overwrite root `results.csv` with only models 01–06. The separate automatically generated `modelling/outputs/results.csv` covers only models 01–04. Use `modelling.export_downloaded_results` for the committed completed-study table.
 
 Primary summaries give each held-out participant equal weight and report the mean and sample standard deviation across folds. The metrics are accuracy, macro precision, macro recall, macro F1, F1 for each class, Cohen's kappa, ROC-AUC, trapezoidal PR-AUC, and average precision.
 
@@ -177,6 +191,36 @@ Primary summaries give each held-out participant equal weight and report the mea
 
 Class-imbalance outputs are stored separately under `modelling/outputs/class_balance/<data-hash>/`. Feature trajectories and Figure 2 are generated by the preprocessing command under the run identified in `processing/outputs/latest_run.json`. Trajectories describe elapsed-time progression with equal-set and equal-subject aggregation.
 
+### Statistical analysis and report plotting files
+
+The public statistics folder contains exactly `feature_statistics.py`, `config.json`, and `README.md`. The audit script generates its required `audit/recording_inventory.csv` locally; do not upload that inventory. With original private reviews restored and preprocessing complete, run:
+
+```sh
+python statistics/feature_statistics.py
+python processing/plot_report_features.py
+```
+
+The statistics command writes `statistics/outputs/<run>/main_feature_comparisons.csv`, participant paired changes, redundancy and boundary/QC sensitivity tables, and figures. Analysis uses participant-level paired stage changes, exact sign tests, BY correction and seeded bootstrap intervals; it fits no classifier. Full instructions: [statistics/README.md](statistics/README.md).
+
+The plotting command reads the saved reviewed trajectories and creates a two-column, 19-feature figure in `report/figures/selected_feature_trajectories_bilateral.png` and `.pdf`, plus participant values, summary and provenance files. It averages sets within each leg, then both legs within participant (both required), then participants equally. Thin curves show participants; shading is between-participant sample SD. The order matches the report's supplied feature list. It performs no new extraction or training.
+
+| Report item | Script/command | Generated source |
+| --- | --- | --- |
+| Acquisition/QC counts | `python audit/audit_data.py` | `audit/recording_inventory.csv`, `subject_inventory.csv`, `summary.json` |
+| Window QC, dictionary and gallery | `python processing/pipeline.py run` | `processing/outputs/<run>/` feature/QC tables and plots |
+| Class counts | `python -m modelling.class_balance` | `modelling/outputs/class_balance/<hash>/` |
+| Feature effects, significance and sensitivity | `python statistics/feature_statistics.py` | `statistics/outputs/<run>/` |
+| Full-page bilateral feature panel | `python processing/plot_report_features.py` | `report/figures/selected_feature_trajectories_bilateral.*` |
+| Nine-model mean/SD comparison | `python -m modelling.export_downloaded_results` | root `results_summary.csv`, from committed `results.csv` |
+| Confusion matrices and per-subject/leg errors | Each model's command in the experiment table | That model's private run directory, using its OOF predictions |
+| Feature-selection frequencies | Model 07 command / its saved run | `selection_frequency.csv`; descriptive stability, not an ablation |
+
+Preprocessing regenerates the gallery without fitting a classifier. To view existing plots, run `python processing/review_boundaries.py` and open <http://127.0.0.1:8765/results/>. Keep the server running while viewing.
+
+### Original private artifacts and submission checklist
+
+Seeds are recorded in source/configuration and run manifests (modelling base seed 20261018). Model files require the corresponding trusted code and compatible dependencies. The final full-data model has no additional independent test score. Original reviews are fixed reproducibility inputs; a fresh manual review need not reproduce the same intervals.
+
 ### Interpretation
 
 Feature-selection frequencies describe selection stability rather than statistical significance or a controlled ablation. Bilateral performance tables compare scores by leg; they do not establish dominance effects or simultaneous inter-leg signal relationships. Interpretation must account for the elapsed-time labels, manual boundary and QC decisions, unavailable MVC and resting-reference measurements, and any differences between the planned acquisition protocol and the available recordings.
@@ -191,12 +235,21 @@ project_paths.py                     Input path resolution
 audit/audit_data.py                   Stable participant and recording registration
 processing/                          Filtering, review interface, QC, and trajectories
 feature_explorer/explore_features.py  Shared signal and feature implementations
-modelling/01_*.ipynb–06_*.ipynb       Six experiment notebooks
+modelling/01_*.ipynb–09_*.ipynb       Nine clean experiment notebooks
 modelling/core.py                    Baselines and nested feature-model evaluation
 modelling/cnn.py                     Fixed waveform CNN evaluation
+modelling/fixed_rbf.py               Training-fold significance selection and fixed RBF
+modelling/ann.py                     Fixed ANN using the same selector
+modelling/band.py                    Noninteractive notebook 09 runner
 modelling/class_balance.py           Descriptive class counts
 modelling/prepare_data.py             Temporal labels and feature-data export
 modelling/export_cnn_signals.py       Aligned filtered-waveform export
 modelling/export_results.py           Six-model result aggregation
+modelling/export_downloaded_results.py  Nine completed-model export and summary
 modelling/requirements*.txt           Pinned experiment dependencies
+statistics/                          Participant statistics, config and instructions
+processing/plot_report_features.py   Full-page bilateral feature panel
+results.csv                         Public model-by-fold scalar metrics
+results_summary.csv                 Means and sample SDs across 15 folds
+results_provenance.json             Downloaded-source hashes and verification limits
 ```

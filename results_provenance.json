@@ -1,0 +1,71 @@
+{
+  "sources": [
+    {
+      "file": "01_majority_results.csv",
+      "sha256": "eadfa41fb7afbd9ee44574c060b6ec344951081516460c501fe29415f7bd484f"
+    },
+    {
+      "file": "02_Logistic_RMS_MDF_results.csv",
+      "sha256": "6308de9e0ede3ee64555985bdf1fb13271d4a715cea3a5242bccdaddba86d12e"
+    },
+    {
+      "file": "03_Logistic_selected_results.csv",
+      "sha256": "872f36a62ad8a718f248e452225ef91e09d23591a009da005ee1621ca3eb82e2"
+    },
+    {
+      "file": "04_linearSVM_results.csv",
+      "sha256": "22db99fd4c8aa94d8084ce9343179052b82e491f9d027caeea2cdb6f5d418a23"
+    },
+    {
+      "file": "05_RBF_SVM_Selected_results.csv",
+      "sha256": "c7eb40c35d62bc3ac87176e3db95f6233fc6a806072192ceefce7a7a561ddbc0"
+    },
+    {
+      "file": "06_CNN_results.csv",
+      "sha256": "349edbad23c711f3f383b11356be5ca90931059a0d3faaf3f135b0fec969a667"
+    },
+    {
+      "file": "07_SVM_RBF_fixed_results.csv",
+      "sha256": "21eb21b88c34ce6c70cb499f0cf06ecf0e4454b6b851d4c272e4b5f013014db3"
+    },
+    {
+      "file": "08_ann_results.csv",
+      "sha256": "0c842ee932b70f535d387cc1ce7aed608a5be34f5d936ad1003d257dfdb0a780"
+    },
+    {
+      "file": "09_LFC_HFC_results.csv",
+      "sha256": "37f4629f1bc9174e5f1999e6922f04ba1eea553a33f12cf0819cf96e18df2f66"
+    }
+  ],
+  "n_models": 9,
+  "n_folds_per_model": 15,
+  "n_rows": 135,
+  "n_windows_per_model": 9215,
+  "verified_private_archives": [
+    {
+      "file": "svm_rbf_selected.zip",
+      "sha256": "93384690de965f7f5865681162d19eb17115fe54772fc26c7e584e1976948f0e",
+      "model": "svm_rbf_selected",
+      "status": "complete",
+      "n_outer_folds": 15,
+      "data_sha256": "4f02d0ba623c7ffdad48ab727bdcb94591c48724915a5c8166c9e6b94d8add73",
+      "run_manifest_sha256": "8a19a8a81d1c3d959a2039e959343cc6dfab42c0929e41cdce997c18ff244b57"
+    }
+  ],
+  "checks": "Unique folds, matching held-out participant assignments and class supports across models; metric ranges and macro/per-class F1 identity.",
+  "limitation": "Downloaded CSVs do not establish identical original data hashes or source versions; retain original private run manifests for that verification.",
+  "public_columns": [
+    "model",
+    "fold",
+    "accuracy",
+    "precision_macro",
+    "recall_macro",
+    "f1_macro",
+    "f1_class_0",
+    "f1_class_1",
+    "cohen_kappa",
+    "roc_auc",
+    "pr_auc",
+    "average_precision"
+  ]
+}

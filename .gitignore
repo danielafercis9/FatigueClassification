@@ -10,6 +10,7 @@ Dataset/
 processing/annotations.json
 *.csv
 !/results.csv
+!/results_summary.csv
 *.npz
 *.npy
 *.joblib
